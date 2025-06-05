@@ -140,9 +140,18 @@ def list_items(status):
 def detail_item(item_id):
     item = Item.query.get_or_404(item_id)
     form = ClaimForm()
-    if item.status == Status.RETURNED:
-        return render_template('detail.html', item=item, can_claim=False)
 
+    # Lorsque l’objet est déjà marqué comme RENDU
+    if item.status == Status.RETURNED:
+        return render_template(
+            'detail.html',
+            item=item,
+            form=form,            # on peut laisser form même si on n'affiche pas le formulaire
+            can_claim=False,
+            Status=Status         # <— on passe la classe Status au template
+        )
+
+    # Si l’utilisateur soumet le formulaire de réclamation
     if form.validate_on_submit():
         item.status = Status.RETURNED
         item.claimant_name = form.claimant_name.data
@@ -153,7 +162,15 @@ def detail_item(item_id):
         flash("Réclamation enregistrée et objet marqué comme rendu !", "success")
         return redirect(url_for('main.list_items', status='returned'))
 
-    return render_template('detail.html', item=item, form=form, can_claim=True)
+    # En version « Lost ou Found », on affiche le formulaire de réclamation
+    return render_template(
+        'detail.html',
+        item=item,
+        form=form,
+        can_claim=True,
+        Status=Status           # <— on passe la classe Status au template
+    )
+
 
 @bp.route('/item/<int:item_id>/edit', methods=['GET', 'POST'])
 def edit_item(item_id):
